@@ -5,8 +5,28 @@
 	<!-- <link rel="stylesheet" href="css/styles.css"/> -->
 </head>
 <body>
+	Status:<div id="status"></div><button id="Start" style="display:none">Start!</button><button id="Stop">Stop</button>
 	<div id="container"></div>
-
+	<div id="check">
+        <p>Checking your platform...</p>
+        <br />
+    </div>
+    <div id="fail" style="display:none">
+        <p>Your platform is not capable of running this sample.</p>
+        <p>Please visit <a href="http://www.intel.com/realsense">www.intel.com/realsense</a> to learn more about Intel<sup>&reg;</sup> RealSense<sup>&trade;</sup> technology.</p>
+        <br />
+    </div>
+    <div id="download" style="display:none">
+        <p>Prepare your platform for the Intel<sup>&reg;</sup> RealSense<sup>&trade;</sup> experience...</p>
+        <p>Please download and install <a href="https://software.intel.com/en-us/realsense/webapp_setup_v6.exe">this software</a>, which checks your platform and installs necessary software to run this sample.</p>
+        <p>Reload your browser page when installation is complete.</p>
+        <br />
+    </div>
+    
+    <script src="https://autobahn.s3.amazonaws.com/autobahnjs/latest/autobahn.min.jgz"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+    <script src="js/vendor/promises.js"></script>
+    <script src="js/vendor/intel.realsense.js"></script>
     <script src="js/vendor/three.min.js"></script>
     <script src="js/vendor/OBJLoader.js"></script>
     <script src="js/vendor/MTLLoader.js"></script>
@@ -16,7 +36,7 @@
     <script src="js/vendor/VREffect.js"></script>
     <script src="js/vendor/webvr-polyfill.js"></script>
     <script src="js/vendor/webvr-manager.js"></script>
-    <script src="js/space.js" defer></script>
+    <script src="js/space.js"></script>
 
 </body>
 </html>

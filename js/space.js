@@ -14,6 +14,21 @@
       drumSnare: new Audio('audio/82238__kevoy__snare-drum.wav')
     };
 
+  if (typeof document.hidden !== "undefined") {
+      hiddenObj = "hidden";
+      visChangeEvent = "visibilitychange";
+  } else if (typeof document.msHidden !== "undefined") {
+      hiddenObj = "msHidden";
+      visChangeEvent = "msvisibilitychange";
+  } else if (typeof document.mozHidden !== "undefined") {
+      hiddenObj = "mozHidden";
+      visChangeEvent = "mozvisibilitychange";
+  } else if (typeof document.webkitHidden !== "undefined") {
+      hiddenObj = "webkitHidden";
+      visChangeEvent = "webkitvisibilitychange";
+  }
+
+
   function initModels() {
 
     loadDrum('red', [-200, 80, 30]);
@@ -29,17 +44,12 @@
     var drumMaterialMetal = new THREE.MeshPhongMaterial({color: 0xb08a6e});
     var drumMaterialSkinWhite = new THREE.MeshLambertMaterial({color: 0xfcfcfc});
 
-    // var tempChildNames = [];
-
     objLoader.load( 'models/drum2.obj', function ( object ) {
 
-      // console.log('Loaded drum model', object);
 
       object.traverse( function ( child ) {
 
         if ( child instanceof THREE.Mesh ) {
-
-          // console.log('child mesh', child);
 
           if (child.name.indexOf('Circle') > -1) {
             child.material = drumMaterialSkinWhite;
@@ -61,13 +71,9 @@
             child.material = drumMaterialSkinWhite;
           }
 
-          // tempChildNames.push( child.name );
-
         }
 
       } );
-
-      // console.log(tempChildNames);
 
       object.scale.set(4, 4, 4);
       object.position.set(posArray[0], posArray[1], posArray[2]);
@@ -277,25 +283,218 @@
 	camera.position.z = 400;
 	camera.position.y = 240;
 
-	var render = function () {
-		requestAnimationFrame( render );
-		renderer.render(scene, camera);
+  var axisHelper = new THREE.AxisHelper( 100 );
+  scene.add( axisHelper );
+
+  //use render in renderHands.js
+	// var render = function () {
+	// 	requestAnimationFrame( render );
+	// 	renderer.render(scene, camera);
+	// };
+
+	// render();
+
+	intel.realsense.SenseManager.detectPlatform(['hand'], ['front']).then(function (info) {
+      if (info.nextStep == 'ready') {
+         console.log('ready!')
+         // mainLogic();
+         $('#check').hide();
+         $('#Start').show();
+      }
+      else if (info.nextStep == 'unsupported') {
+          $('#fail').show();
+          $('#fail').append('<b> Platform is not supported for Intel(R) RealSense(TM) SDK: </b>');
+          $('#fail').append('<b> either you are missing the required camera, or your OS and browser are not supported </b>');
+          $('#fail').show();
+      } else if (info.nextStep == 'driver') {
+          $('#fail').append('Please update your camera driver from your computer manufacturer.');
+          $('#fail').show();
+      } else if (info.nextStep == 'runtime') {
+          $('#download').show(1000);
+      }
+
+  }).catch(function (error) {
+      $('#fail').append("CheckPlatform failed " + JSON.stringify(error));
+      $('#fail').show();
+  });
+
+  function mainLogic() {
+
+    // Close when page goes away
+    var sense;
+    $(window).bind("beforeunload", function (e) {
+        if (sense != undefined) {
+            sense.release().then(function (result) {
+                sense = undefined;
+            });
+        }
+    })
+
+    $(document).ready(function () {
+
+        var rs = intel.realsense; // name space short-cut
+        var handModule; // hand module instance
+        var handConfig; // hand module configuration instance
+
+        var imageSize; //image stream size
+        var scaleFactor = 1900;// scaleFactor for the sample renderer
+        var nodestorender; // data structure to hold sphere objects to render
+
+        // Pause the module when the page goes out of view
+        $(document).bind(visChangeEvent, function () {
+            if (sense !== undefined && handModule !== undefined) {
+                if (document[hiddenObj]) {
+                    handModule.pause(true);
+                }
+                else {
+                    handModule.pause(false);
+                }
+            }
+        });
+
+        $('#Start').click(function () {
+        		$(this).hide();
+        		$('#Stop')).show();
+            // Create a SenseManager instance
+            rs.SenseManager.createInstance().then(function (result) {
+                sense = result;
+                return rs.hand.HandModule.activate(sense);
+            }).then(function (result) {
+                handModule = result;
+                status('Init started');
+
+                // Set the on connect handler
+                sense.onDeviceConnected = onConnect;
+
+                // Set the status handler
+                sense.onStatusChanged = onStatus;
+
+                // Set the data handler
+                handModule.onFrameProcessed = onHandData;
+
+                // SenseManager Initialization
+                return sense.init();
+            }).then(function (result) {
+
+                // Configure Hand Tracking
+                return handModule.createActiveConfiguration();
+            }).then(function (result) {
+                handConfig = result;
+
+                // Enable all alerts
+                handConfig.allAlerts = true;
+
+                // Enable all gestures
+                handConfig.allGestures = true;
+
+                // Apply Hand Configuration changes
+                return handConfig.applyChanges();
+            }).then(function (result) {
+                return handConfig.release();
+            }).then(function (result) {
+                // Query image size 
+                imageSize = sense.captureManager.queryImageSize(rs.StreamType.STREAM_TYPE_DEPTH);
+
+                // Start Streaming
+                return sense.streamFrames();
+            }).then(function (result) {
+                status('Streaming ' + imageSize.width + 'x' + imageSize.height);
+
+                //initialize sample renderer
+                if (scene == null) {
+                    nodestorender = initHandRenderer(imageSize.width, imageSize.height);
+                }
+
+            }).catch(function (error) {
+                // handle pipeline initialization errors
+                status('Init failed: ' + JSON.stringify(error));
+            });
+        });
+
+        // Process hand data when ready
+        function onHandData(sender, data) {
+
+            // if no hands found
+            if (data.numberOfHands == 0) return;
+
+            // retrieve hand data 
+            var allData = data.queryHandData(rs.hand.AccessOrderType.ACCESS_ORDER_NEAR_TO_FAR);
+
+            // for every hand in current frame
+            for (h = 0; h < data.numberOfHands; h++) {
+                var ihand = allData[h]; //retrieve hand data
+                var joints = ihand.trackedJoints; //retrieve all the joints
+
+                // for every joint
+                for (j = 0; j < joints.length; j++) {
+
+                    // if a joint is not valid
+                    if (joints[j] == null || joints[j].confidence <= 0) continue;
+
+                    // update sample renderer joint position
+                    nodestorender[h][j].position.set(joints[j].positionWorld.x * scaleFactor, joints[j].positionWorld.y * scaleFactor, joints[j].positionWorld.z * scaleFactor);
+                }
+            }
+
+            // retrieve the fired alerts
+            for (a = 0; a < data.firedAlertData.length; a++) {
+                $('#alerts_status').text('Alert: ' + JSON.stringify(data.firedAlertData[a]));
+                var _label = data.firedAlertData[a].label;
+
+                // notify the sample renderer the tracking alerts
+                if (_label == rs.hand.AlertType.ALERT_HAND_NOT_DETECTED || _label == rs.hand.AlertType.ALERT_HAND_NOT_TRACKED || _label == rs.hand.AlertType.ALERT_HAND_OUT_OF_BORDERS) {
+                    clearHandsPosition();
+                }
+            }
+
+            // retrieve the fired gestures
+            for (g = 0; g < data.firedGestureData.length; g++) {
+                $('#gestures_status').text('Gesture: ' + JSON.stringify(data.firedGestureData[g]));
+            }
+        }
+
+        // stop streaming
+        $('#Stop').click(function () {
+
+            sense.release().then(function (result) {
+                status('Stopped');
+                sense = undefined;
+                $(this).hide()
+		        		$('#Start').show();
+                clear();
+            });
+        });
+
+        // On connected to device info
+        function onConnect(sender, connected) {
+            if (connected == true) {
+                $('#alerts_status').append('Connect with device instance: ' + sender.instance + '<br>');
+            }
+        }
+
+        // Error status
+        function onStatus(sender, sts) {
+            if (sts < 0) {
+                status('Module error with status code: ' + sts);
+                clear();
+            }
+        }
+
+        // Status msg
+        function status(msg) {
+            $('#status').text(msg);
+        };
+
+        // clear alerts & gestures
+        function clear() {
+            clearHandsPosition();
+            $('#alerts_status').text('');
+            $('#gestures_status').text('');
+        };
+
+    });
+
 	};
-
-	render();
-
-	
-  
-  // initModels();
- 
-  // initSpaceScene();
-
-  // initLights();
-  // renderer.render( scene, camera );
-//  scene.add(plane);
-
-  //var axisHelper = new THREE.AxisHelper( 100 );
-  //scene.add( axisHelper );
 
 
 
