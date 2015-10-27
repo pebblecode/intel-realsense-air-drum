@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title> Intel&reg; RealSense&trade; SDK JavaScript* Sample </title>
+
+    <script src="js/vendor/promises.js"></script>
+    <script src="https://autobahn.s3.amazonaws.com/autobahnjs/latest/autobahn.min.jgz"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+	
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <link rel="stylesheet" href="css/styles.css"/>
+</head>
+<body>
+    <div id="check">
+        <p>Checking your platform...</p>
+        <br />
+    </div>
+    <div id="fail">
+        <p>Your platform is not capable of running this sample.</p>
+        <p>Please visit <a href="http://www.intel.com/realsense">www.intel.com/realsense</a> to learn more about Intel<sup>&reg;</sup> RealSense<sup>&trade;</sup> technology.</p>
+        <br />
+    </div>
+    <div id="download">
+        <p>Prepare your platform for the Intel<sup>&reg;</sup> RealSense<sup>&trade;</sup> experience...</p>
+        <p>Please download and install <a href="https://software.intel.com/en-us/realsense/webapp_setup_v6.exe">this software</a>, which checks your platform and installs necessary software to run this sample.</p>
+        <p>Reload your browser page when installation is complete.</p>
+        <br />
+    </div>
+    <div id="appcontext">
+        <p>Sample Dialogs</p>
+        <br />
+		
+		<button id="Start">Start</button>
+        <button id="Stop" disabled="disabled">Stop</button>
+
+        <div id="renderercontainer"></div>
+        
+
+        <div id="gestures_status" class="clear"></div>
+        <div id="alerts_status" class="clear"></div>
+        Status:<div id="status"></div>
+			
+    </div>
+
+    <div id="container"></div>
+
+    <script src="js/vendor/intel.realsense.js"></script>
+    <script src="js/vendor/three.min.js"></script>
+    <script src="js/vendor/OBJLoader.js"></script>
+    <script src="js/vendor/MTLLoader.js"></script>
+    <script src="js/vendor/OBJMTLLoader.js"></script>
+    <script src="js/vendor/OrbitControls.js"></script>
+    <script src="js/vendor/VRControls.js"></script>
+    <script src="js/vendor/VREffect.js"></script>
+    <script src="js/vendor/webvr-polyfill.js"></script>
+    <script src="js/vendor/webvr-manager.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/renderHands.js"></script>
+</body>
+</html>
