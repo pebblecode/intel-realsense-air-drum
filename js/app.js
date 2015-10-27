@@ -427,7 +427,11 @@
 
                     // if a joint is not valid
                     if (joints[j] == null || joints[j].confidence <= 0) continue;
-                    handleHitsOnDrums();
+                    
+                    if(j == 0){
+                    	handleHitsOnDrums(joints[j]);
+                    }
+
                     // update sample renderer joint position
                     nodestorender[h][j].position.set(joints[j].positionWorld.x * scaleFactor, joints[j].positionWorld.y * scaleFactor, joints[j].positionWorld.z * scaleFactor);
                 }
@@ -450,6 +454,12 @@
             }
         }
 
+        function handleHitsOnDrums(joint){
+        	// $('.log').append(joint.position)
+        	if(joint.position.x >= 0 && joint.position.x <= 10) {
+        		// $('.log').append('HIT!');/
+        	}//0, 0, 100
+        }
         // stop streaming
         $('#Stop').click(function () {
 
