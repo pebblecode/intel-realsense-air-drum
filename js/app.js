@@ -77,6 +77,7 @@
 
       object.scale.set(1, 1, 0);
       object.position.set(posArray[0], posArray[1], posArray[2]);
+      // var material = Physijs.createMAterial(object, .6, .3)
       window.drum = object;
       scene.add(object);
     });
@@ -271,15 +272,38 @@
  	var renderer = new THREE.WebGLRenderer();
 	renderer.setSize( window.innerWidth, window.innerHeight );
 	document.body.appendChild( renderer.domElement );
-
-	var scene = new THREE.Scene();
-
+	
+	Physijs.scripts.worker = 'js/vendor/physijs_worker.js';
+	Physijs.scripts.ammo = 'physijs_ammo.js';
+	// var scene = new THREE.Scene();
+	var scene = new Physijs.Scene();
+	scene.addEventListener(
+			'update',
+			function() {
+				scene.simulate( undefined, 1 );
+			}
+		);
+	
 	var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
 
 	initLights();
-	initSpaceScene();
-	initModels();
+	// initSpaceScene();
+	// initModels();
 
+	var mesh = new Physijs.SphereMesh(
+	    new THREE.SphereGeometry( 3 ),
+	    new Physijs.createMaterial(new THREE.MeshBasicMaterial({ color: 0xEEFF11 }))
+	);
+	mesh.addEventListener( 'collision', function( other_object, relative_velocity, relative_rotation, contact_normal ) {
+	    // `this` has collided with `other_object` with an impact speed of `relative_velocity` and a rotational force of `relative_rotation` and at normal `contact_normal`
+	    console.log('hit')
+	});
+
+	mesh.position.set(0,0,100);
+
+	scene.add(mesh);
+
+	camera.position.x = -100;
 	camera.position.z = 400;
 	camera.position.y = 240;
 
@@ -428,9 +452,9 @@
                     // if a joint is not valid
                     if (joints[j] == null || joints[j].confidence <= 0) continue;
                     
-                    if(j == 0){
-                    	handleHitsOnDrums(joints[j]);
-                    }
+                    // if(j == 0){
+                    // 	handleHitsOnDrums(joints[j]);
+                    // }
 
                     // update sample renderer joint position
                     nodestorender[h][j].position.set(joints[j].positionWorld.x * scaleFactor, joints[j].positionWorld.y * scaleFactor, joints[j].positionWorld.z * scaleFactor);
@@ -562,7 +586,7 @@ function createSphere(_radius, _wSegments, _hSegments, _specularColor, _color, _
         emissive: _emmisive,
         shininess: _shininess
     });
-    var sphere = new THREE.Mesh(geometry, material);
+    var sphere = new Physijs.SphereMesh(geometry, new Physijs.createMaterial(material));
     return sphere;
 }
 
