@@ -18,14 +18,20 @@
 
 
   function initModels() {
-    var showHitAreas = false;
-    loadDrum('blue', [40, -60, 140], 30, 'drumSnare', showHitAreas);
-    loadDrum('red', [0, -60, 140], 0, 'drumDeep',showHitAreas);
-    loadDrum('blue', [-40, -60, 140], -30, 'drumKick', showHitAreas);
-    // loadHiHat([130,170,200]);
+    var showHitAreas = true;
+    // loadDrum('blue', [40, 0, 140], 30, 'drumSnare', showHitAreas);
+    // loadDrum('red', [0, 0, 140], 0, 'drumDeep', showHitAreas);
+    // loadDrum('blue', [-40, 0, 140], -30, 'drumKick', showHitAreas);
+    // loadHiHat([-130,0,300]);
+
+    loadDrum('red', [-200, 80, 30],'drumSnare', showHitAreas);
+    loadDrum('blue', [-70, 90, 0],'drumDeep', showHitAreas);
+    loadDrum('red', [70, 90, 30],'drumKick', showHitAreas);
+
+    loadHiHat([250, 140, -20]);
   }
 
-  function loadDrum(color, posArray, hitAreaPosition, sound, showHitArea) {
+  function loadDrum(color, posArray, sound, showHitArea) {
 
     showHitArea = showHitArea || false;
 
@@ -67,9 +73,9 @@
       } );
 
       object.position.set(posArray[0], posArray[1], posArray[2]);
-      
+
       var box = new Physijs.BoxMesh(
-          new THREE.BoxGeometry(20,5,20),
+          new THREE.BoxGeometry(25,5,25),
           new Physijs.createMaterial(new THREE.MeshBasicMaterial()),
           0
         );
@@ -79,9 +85,11 @@
         sounds[sound].play();
       });
 
-      box.position.set(hitAreaPosition,-27,100);
-      scene.add(box);
+      box.position.set(0,23,0);
+      object.add(box);
       scene.add(object);
+
+      object.scale.set(4,4,4);
 
     });
 
@@ -114,7 +122,7 @@
         }
       });
 
-      object.scale.set(20,19,20);
+      object.scale.set(30,25,30);
       object.position.set(posArray[0], posArray[1], posArray[2]);
       window.hihat = object;
       scene.add(object);
@@ -290,10 +298,20 @@
 	ball.position.set(0,0,100);
 
 	scene.add(ball);
+  camera.lookAt(scene.position);
+	camera.position.x = 0;
+	camera.position.z = 500;
+	camera.position.y = 500;
 
-	camera.position.x = -100;
-	camera.position.z = 400;
-	camera.position.y = 240;
+  var plane = new THREE.Mesh(
+    new THREE.PlaneGeometry(80,80),
+    new THREE.MeshPhongMaterial({wireframe: false})
+  );
+
+  plane.scale.set(2,2,2);
+  plane.position.set(0,200,-100);
+
+  camera.lookAt(plane.position);
 
   var axisHelper = new THREE.AxisHelper( 100 );
   scene.add( axisHelper );
@@ -619,17 +637,7 @@ function initHandRenderer(w, h) {
         hand_joints_array[i] = new Array(MaxJoints);
     }
 
-    // scene & camera
-    // scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(45, w / h, 1, 1500);
-    camera.position.z = -60;
-    camera.rotateY = 90 * Math.PI / 180;
-    camera.lookAt(scene.position);
-
-    // // renderer
-    // renderer = new THREE.WebGLRenderer({ alpha: true } );
-    
-    // // set window size
+  
     renderer.setSize(w, h);
     renderer.setClearColor( 0x000000, 0 ); // the default
     // var container = document.getElementById('renderercontainer');
