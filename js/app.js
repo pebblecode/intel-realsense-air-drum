@@ -27,10 +27,10 @@
 
   function loadDrum(color, posArray) {
 
-    var drumMaterialOutsideRed = new THREE.MeshLambertMaterial({color: 0xfe0000});
-    var drumMaterialOutsideBlue = new THREE.MeshLambertMaterial({color: 0x4669dd});
-    var drumMaterialMetal = new THREE.MeshPhongMaterial({color: 0xb08a6e});
-    var drumMaterialSkinWhite = new THREE.MeshLambertMaterial({color: 0xfcfcfc});
+    var drumMaterialOutsideRed = Physijs.createMaterial(new THREE.MeshLambertMaterial({color: 0xfe0000}));
+    var drumMaterialOutsideBlue = Physijs.createMaterial(new THREE.MeshLambertMaterial({color: 0x4669dd}));
+    var drumMaterialMetal = Physijs.createMaterial(new THREE.MeshPhongMaterial({color: 0xb08a6e}));
+    var drumMaterialSkinWhite = Physijs.createMaterial(new THREE.MeshLambertMaterial({color: 0xfcfcfc}));
 
     objLoader.load( 'models/drum2.obj', function ( object ) {
 
@@ -40,6 +40,7 @@
         if ( child instanceof THREE.Mesh ) {
 
           if (child.name.indexOf('Circle') > -1) {
+
             child.material = drumMaterialSkinWhite;
 
           } else if (child.name.indexOf('Sphere') > -1) {
@@ -68,6 +69,7 @@
       // var material = Physijs.createMAterial(object, .6, .3)
       
       scene.add(object);
+
     });
 
   }
@@ -248,50 +250,15 @@
 	// var scene = new THREE.Scene();
 	var scene = new Physijs.Scene();
 
-  function subtract(pointA, pointB){
-
-    var delta = {
-      x : pointA.x - pointB.x,
-      y : pointA.y - pointB.y,
-      z : 0//pointA.z - pointB.z
-    };
-
-    return new THREE.Vector3(delta.x * 5, delta.y * 5, delta.z * 1);
-  }
-
-  function toScreenXY(pos3D){
-      /*var projector = new THREE.Projector();
-      var v = projector.projectVector(pos3D, camera);
-      var percX = (v.x + 1) / 2;
-      var percY = (-v.y + 1) / 2;
-      var left = percX * window.innerWidth;
-      var top = percY * window.innerHeight;
-
-      return new THREE.Vector2(left, top);*/
-      return pos3D.clone().project(camera);
-  }
-
 	scene.addEventListener(
 			'update',
 			function() {
-         // = fingerPoint.sub(lastFingerPoint);
-         // var delta = new THREE.Vector3(fingerPoint.x/(fingerPoint.z*fingerPoint.z), fingerPoint.y/(fingerPoint.z*fingerPoint.z), 0); 
 
-        //var delta = subtract(fingerPoint, ball.position);
-        // delta.normalize();
-        // delta.multiplyScalar(1000);
-        // lastFingerPoint = fingerPoint.clone();
-
-        //console.log("1: " + fingerPoint.x);
-        //console.log("2: " + );
-
-        var screenPos = toScreenXY(fingerPoint);
-        // ball.applyCentralImpulse(delta);
-        ball.position.set(-100 * screenPos.x, 10 + (100 * screenPos.y), ball.position.z);
+        var screenPos = fingerPoint.clone().project(camera);
+        ball.position.set(-100 * screenPos.x, 10 + (100 * screenPos.y), 100);
         ball.__dirtyPosition = true;
         ball.applyCentralImpulse(new THREE.Vector3(0,35,0));
 
-        //ball.position.add(delta);
 				scene.simulate( undefined, 1 );
 			}
 		);
@@ -309,6 +276,7 @@
 	ball.addEventListener( 'collision', function( other_object, relative_velocity, relative_rotation, contact_normal ) {
 	    // `this` has collided with `other_object` with an impact speed of `relative_velocity` and a rotational force of `relative_rotation` and at normal `contact_normal`
 	    console.log('ball hit');
+      // ball.position.set(0,0,100);
 	});
 
 	ball.position.set(0,0,100);
@@ -316,17 +284,18 @@
 	scene.add(ball);
 
   var box = new Physijs.BoxMesh(
-      new THREE.BoxGeometry(20,20,20),
-      new Physijs.createMaterial(new THREE.MeshBasicMaterial({color:0xFFFFFF})),
+      new THREE.BoxGeometry(20,5,0),
+      new Physijs.createMaterial(new THREE.MeshBasicMaterial()),
       0
     );
-
+  // box.visible = false;
   box.addEventListener('collision', function() {
     console.log('Hit BOX!');
   });
 
-  box.position.set(0,-37,100);
+  box.position.set(0,-27,100);
   scene.add(box);
+
 
 	camera.position.x = -100;
 	camera.position.z = 400;
