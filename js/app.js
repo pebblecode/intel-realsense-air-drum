@@ -7,6 +7,8 @@
     objMtlLoader = new THREE.OBJMTLLoader(),
     spacesphere,
     planet,
+    fingerPoint = new THREE.Vector3(0,0,0),
+    lastFingerPoint = new THREE.Vector3(0,0,0),
     sounds = {
       hiHat: new Audio('audio/CHINESE TD_2.wav'),
       drumDeep: new Audio('audio/218458__thomasjaunism__pacific-island-drum-2 (1).wav'),
@@ -14,24 +16,10 @@
       drumSnare: new Audio('audio/82238__kevoy__snare-drum.wav')
     };
 
-  if (typeof document.hidden !== "undefined") {
-      hiddenObj = "hidden";
-      visChangeEvent = "visibilitychange";
-  } else if (typeof document.msHidden !== "undefined") {
-      hiddenObj = "msHidden";
-      visChangeEvent = "msvisibilitychange";
-  } else if (typeof document.mozHidden !== "undefined") {
-      hiddenObj = "mozHidden";
-      visChangeEvent = "mozvisibilitychange";
-  } else if (typeof document.webkitHidden !== "undefined") {
-      hiddenObj = "webkitHidden";
-      visChangeEvent = "webkitvisibilitychange";
-  }
-
 
   function initModels() {
 
-    loadDrum('red', [0, 0, 100]);
+    loadDrum('red', [0, -60, 140]);
     // loadDrum('blue', [10, 90, 0]);
     // loadDrum('red', [70, 90, 30]);
     // loadHiHat([130,170,200]);
@@ -75,10 +63,10 @@
 
       } );
 
-      object.scale.set(1, 1, 0);
+      // object.scale.set(1, 1, 0);
       object.position.set(posArray[0], posArray[1], posArray[2]);
       // var material = Physijs.createMAterial(object, .6, .3)
-      window.drum = object;
+      
       scene.add(object);
     });
 
@@ -234,24 +222,6 @@
   var previousLeftPalmPos = [0, 0, 0];
   var previousRightPalmPos = [0, 0, 0];
 
-  function handleHand(hand, previousHandPos) {
-
-    if (Math.abs(previousHandPos[1] - hand.palmPosition[1]) < 20 || previousHandPos[1] < hand.palmPosition[1])
-      return;
-
-    console.log("Hand type: " + hand.type);
-    console.log("Palm x: " + hand.palmPosition[0]);
-    console.log("Palm y: " + hand.palmPosition[1]);
-
-    var palmXPosition = hand.palmPosition[0];
-    if (palmXPosition < 0)
-      sounds['drumDeep'].play();
-    else if (palmXPosition > 180)
-      sounds['hiHat'].play();
-    else
-      sounds['drumSnare'].play();
-  }
-
   function yAxisStuff(frame) {
     for (var h = 0; h < frame.hands.length; h++){
         var hand = frame.hands[h];        
@@ -277,31 +247,86 @@
 	Physijs.scripts.ammo = 'physijs_ammo.js';
 	// var scene = new THREE.Scene();
 	var scene = new Physijs.Scene();
+
+  function subtract(pointA, pointB){
+
+    var delta = {
+      x : pointA.x - pointB.x,
+      y : pointA.y - pointB.y,
+      z : 0//pointA.z - pointB.z
+    };
+
+    return new THREE.Vector3(delta.x * 5, delta.y * 5, delta.z * 1);
+  }
+
+  function toScreenXY(pos3D){
+      /*var projector = new THREE.Projector();
+      var v = projector.projectVector(pos3D, camera);
+      var percX = (v.x + 1) / 2;
+      var percY = (-v.y + 1) / 2;
+      var left = percX * window.innerWidth;
+      var top = percY * window.innerHeight;
+
+      return new THREE.Vector2(left, top);*/
+      return pos3D.clone().project(camera);
+  }
+
 	scene.addEventListener(
 			'update',
 			function() {
+         // = fingerPoint.sub(lastFingerPoint);
+         // var delta = new THREE.Vector3(fingerPoint.x/(fingerPoint.z*fingerPoint.z), fingerPoint.y/(fingerPoint.z*fingerPoint.z), 0); 
+
+        //var delta = subtract(fingerPoint, ball.position);
+        // delta.normalize();
+        // delta.multiplyScalar(1000);
+        // lastFingerPoint = fingerPoint.clone();
+
+        //console.log("1: " + fingerPoint.x);
+        //console.log("2: " + );
+
+        var screenPos = toScreenXY(fingerPoint);
+        // ball.applyCentralImpulse(delta);
+        ball.position.set(-100 * screenPos.x, 10 + (100 * screenPos.y), ball.position.z);
+        ball.__dirtyPosition = true;
+        ball.applyCentralImpulse(new THREE.Vector3(0,35,0));
+
+        //ball.position.add(delta);
 				scene.simulate( undefined, 1 );
 			}
 		);
-	
+
 	var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
 
 	initLights();
 	// initSpaceScene();
-	// initModels();
+	initModels();
 
-	var mesh = new Physijs.SphereMesh(
+	var ball = new Physijs.SphereMesh(
 	    new THREE.SphereGeometry( 3 ),
 	    new Physijs.createMaterial(new THREE.MeshBasicMaterial({ color: 0xEEFF11 }))
 	);
-	mesh.addEventListener( 'collision', function( other_object, relative_velocity, relative_rotation, contact_normal ) {
+	ball.addEventListener( 'collision', function( other_object, relative_velocity, relative_rotation, contact_normal ) {
 	    // `this` has collided with `other_object` with an impact speed of `relative_velocity` and a rotational force of `relative_rotation` and at normal `contact_normal`
-	    console.log('hit')
+	    console.log('ball hit');
 	});
 
-	mesh.position.set(0,0,100);
+	ball.position.set(0,0,100);
 
-	scene.add(mesh);
+	scene.add(ball);
+
+  var box = new Physijs.BoxMesh(
+      new THREE.BoxGeometry(20,20,20),
+      new Physijs.createMaterial(new THREE.MeshBasicMaterial({color:0xFFFFFF})),
+      0
+    );
+
+  box.addEventListener('collision', function() {
+    console.log('Hit BOX!');
+  });
+
+  box.position.set(0,-37,100);
+  scene.add(box);
 
 	camera.position.x = -100;
 	camera.position.z = 400;
@@ -310,13 +335,17 @@
   var axisHelper = new THREE.AxisHelper( 100 );
   scene.add( axisHelper );
 
-  //use render in renderHands.js
-	// var render = function () {
-	// 	requestAnimationFrame( render );
-	// 	renderer.render(scene, camera);
-	// };
+  var groundMaterial = Physijs.createMaterial( 
+		new THREE.MeshPhongMaterial({
+				specular:'#414141',
+				color:'#8BC34A',
+				emissive:'#0f0e0e', 
+				shininess:100
+			}), 
+			.8, 
+			.3
+	);
 
-	// render();
 
 	intel.realsense.SenseManager.detectPlatform(['hand'], ['front']).then(function (info) {
       if (info.nextStep == 'ready') {
@@ -452,12 +481,17 @@
                     // if a joint is not valid
                     if (joints[j] == null || joints[j].confidence <= 0) continue;
                     
-                    // if(j == 0){
-                    // 	handleHitsOnDrums(joints[j]);
-                    // }
+                    if(j == 1){
+                    	handleHitsOnDrums(joints[j]);
+                    }
 
+                    
                     // update sample renderer joint position
                     nodestorender[h][j].position.set(joints[j].positionWorld.x * scaleFactor, joints[j].positionWorld.y * scaleFactor, joints[j].positionWorld.z * scaleFactor);
+                    
+                    if(j === 9){
+                      fingerPoint = nodestorender[h][j].position;
+                    }
                 }
             }
 
@@ -479,10 +513,25 @@
         }
 
         function handleHitsOnDrums(joint){
-        	// $('.log').append(joint.position)
-        	if(joint.position.x >= 0 && joint.position.x <= 10) {
-        		// $('.log').append('HIT!');/
-        	}//0, 0, 100
+        	    var palmXPosition = joint.positionWorld.x * scaleFactor;
+              var palmYPosition = joint.positionWorld.y * scaleFactor;
+              var palmZPosition = joint.positionWorld.z * scaleFactor;
+              
+              // console.log(`x ${palmXPosition}, y ${palmYPosition}`)
+
+              if (
+                (palmXPosition <= 10
+                && palmXPosition >= -10)
+                && (palmYPosition <= -27 && palmYPosition >= -32)
+                // && palmZPosition <= 112
+                // && palmZPosition >= 99
+                )
+                sounds['drumDeep'].play();
+              // else if (palmXPosition > 180)
+              //   sounds['hiHat'].play();
+              // else
+              //   sounds['drumSnare'].play();
+
         }
         // stop streaming
         $('#Stop').click(function () {
@@ -586,9 +635,10 @@ function createSphere(_radius, _wSegments, _hSegments, _specularColor, _color, _
         emissive: _emmisive,
         shininess: _shininess
     });
-    var sphere = new Physijs.SphereMesh(geometry, new Physijs.createMaterial(material));
+    var sphere = new THREE.Mesh(geometry, material);
     return sphere;
 }
+
 
 /** HAND RENDERER METHODS **/
 
@@ -632,6 +682,7 @@ function initHandRenderer(w, h) {
     // scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(45, w / h, 1, 1500);
     camera.position.z = -60;
+    camera.rotateY = 90 * Math.PI / 180;
     camera.lookAt(scene.position);
 
     // // renderer
@@ -666,7 +717,7 @@ function initHandRenderer(w, h) {
    
     fillHandScene(); // create spheres
     handRendererUpdate(); // hand renderer update
-
+    scene.simulate();
     return hand_joints_array;
 }
 
