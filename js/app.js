@@ -22,7 +22,7 @@
     loadDrum('blue', [40, -60, 140], 30, 'drumSnare', showHitAreas);
     loadDrum('red', [0, -60, 140], 0, 'drumDeep',showHitAreas);
     loadDrum('blue', [-40, -60, 140], -30, 'drumKick', showHitAreas);
-    // loadHiHat([130,170,200]);
+    loadHiHat([80,-30,140]);
   }
 
   function loadDrum(color, posArray, hitAreaPosition, sound, showHitArea) {
@@ -114,7 +114,8 @@
         }
       });
 
-      object.scale.set(20,19,20);
+      object.scale.set(30/4,25/4,30/4);
+      object.rotation.set(0, 3, 0);
       object.position.set(posArray[0], posArray[1], posArray[2]);
       window.hihat = object;
       scene.add(object);
