@@ -7,8 +7,8 @@
     objMtlLoader = new THREE.OBJMTLLoader(),
     spacesphere,
     planet,
-    fingerPoint = new THREE.Vector3(0,0,0),
-    lastFingerPoint = new THREE.Vector3(0,0,0),
+    sticks,
+    drumsticks = [new THREE.Vector3(0,0,0),new THREE.Vector3(0,0,0)],
     sounds = {
       hiHat: new Audio('audio/CHINESE TD_2.wav'),
       drumDeep: new Audio('audio/218458__thomasjaunism__pacific-island-drum-2 (1).wav'),
@@ -273,7 +273,7 @@
 
   // Set up scene
 
- 	var renderer = new THREE.WebGLRenderer();
+ 	var renderer = new THREE.WebGLRenderer({antialias:true});
 	renderer.setSize( window.innerWidth, window.innerHeight );
 	document.body.appendChild( renderer.domElement );
 	
@@ -286,10 +286,14 @@
 			'update',
 			function() {
 
-        var screenPos = fingerPoint.clone().project(camera);
-        ball.position.set(-100 * screenPos.x, 5 + (100 * screenPos.y), 100);
-        ball.__dirtyPosition = true;
-        ball.applyCentralImpulse(new THREE.Vector3(0,35,0));
+        if(!sticks) return;
+
+        drumsticks.forEach(function(stick, i){
+          var screenPos = stick.clone().project(camera);
+          sticks[i].position.set(-100 * screenPos.x, 5 + (100 * screenPos.y), 100);
+          sticks[i].__dirtyPosition = true;
+          sticks[i].applyCentralImpulse(new THREE.Vector3(0,35,0));
+        });
 
 				scene.simulate( undefined, 1 );
 			}
@@ -301,14 +305,23 @@
 	// initSpaceScene();
 	initModels();
 
-	var ball = new Physijs.SphereMesh(
-	    new THREE.SphereGeometry( 3 ),
-	    new Physijs.createMaterial(new THREE.MeshBasicMaterial({ color: 0xEEFF11 }))
-	);
+	sticks = createSticks();
 
-	ball.position.set(0,0,100);
+  function createSticks(){
+    return [createStick(), createStick()];
+  }
 
-	scene.add(ball);
+  function createStick(){
+    var stick = new Physijs.SphereMesh(
+      new THREE.SphereGeometry( 3 ),
+        new Physijs.createMaterial(new THREE.MeshBasicMaterial({ color: 0xEEFF11 }))
+    );
+
+    stick.position.set(0,0,100);
+
+    scene.add(stick);
+    return stick;
+  }
 
 	camera.position.x = -100;
 	camera.position.z = 400;
@@ -467,14 +480,21 @@
                     nodestorender[h][j].position.set(joints[j].positionWorld.x * scaleFactor, joints[j].positionWorld.y * scaleFactor, joints[j].positionWorld.z * scaleFactor);
                     
                     //if(j === 9){
-                    //  fingerPoint = nodestorender[h][j].position;
+                    //  drumsticks = nodestorender[h][j].position;
                     //}
                 }
 
             }
-            if (data.numberOfHands > 0) {
-                  fingerPoint = nodestorender[0][9].position;
+            if (data.numberOfHands) {
+                if(data.numberOfHands === 1){
+                  drumsticks[0] = nodestorender[0][9].position;
                 }
+
+                if(data.numberOfHands === 2){
+                  drumsticks[0] = nodestorender[0][9].position;
+                  drumsticks[1] = nodestorender[1][9].position;
+                }
+            }
 
             // retrieve the fired alerts
             for (a = 0; a < data.firedAlertData.length; a++) {
