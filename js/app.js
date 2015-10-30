@@ -117,7 +117,25 @@
       object.scale.set(30/4,25/4,30/4);
       object.rotation.set(0, 3, 0);
       object.position.set(posArray[0], posArray[1], posArray[2]);
+      
+
+      var box = new Physijs.BoxMesh(
+          new THREE.BoxGeometry(30,5,30),
+          new Physijs.createMaterial(new THREE.MeshBasicMaterial()),
+          0
+        );
+      box.visible = false;
+      box.addEventListener('collision', function() {
+        console.log('Hit BOX!');
+        sounds['hiHat'].play();
+      });
+
+      box.position.set(70,-5,100);
+      // box.scale.set(0.2,0.2,0.2);
+      window.box = box;
       window.hihat = object;
+      //object.add(box);
+      scene.add(box);
       scene.add(object);
     });
 
