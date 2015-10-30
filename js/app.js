@@ -18,14 +18,16 @@
 
 
   function initModels() {
-
-    loadDrum('red', [0, -60, 140]);
-    // loadDrum('blue', [10, 90, 0]);
-    // loadDrum('red', [70, 90, 30]);
+    var showHitAreas = false;
+    loadDrum('blue', [40, -60, 140], 30, 'drumSnare', showHitAreas);
+    loadDrum('red', [0, -60, 140], 0, 'drumDeep',showHitAreas);
+    loadDrum('blue', [-40, -60, 140], -30, 'drumKick', showHitAreas);
     // loadHiHat([130,170,200]);
   }
 
-  function loadDrum(color, posArray) {
+  function loadDrum(color, posArray, hitAreaPosition, sound, showHitArea) {
+
+    showHitArea = showHitArea || false;
 
     var drumMaterialOutsideRed = Physijs.createMaterial(new THREE.MeshLambertMaterial({color: 0xfe0000}));
     var drumMaterialOutsideBlue = Physijs.createMaterial(new THREE.MeshLambertMaterial({color: 0x4669dd}));
@@ -64,10 +66,21 @@
 
       } );
 
-      // object.scale.set(1, 1, 0);
       object.position.set(posArray[0], posArray[1], posArray[2]);
-      // var material = Physijs.createMAterial(object, .6, .3)
       
+      var box = new Physijs.BoxMesh(
+          new THREE.BoxGeometry(20,5,20),
+          new Physijs.createMaterial(new THREE.MeshBasicMaterial()),
+          0
+        );
+      box.visible = showHitArea;
+      box.addEventListener('collision', function() {
+        console.log('Hit BOX!');
+        sounds[sound].play();
+      });
+
+      box.position.set(hitAreaPosition,-27,100);
+      scene.add(box);
       scene.add(object);
 
     });
@@ -255,7 +268,7 @@
 			function() {
 
         var screenPos = fingerPoint.clone().project(camera);
-        ball.position.set(-100 * screenPos.x, 10 + (100 * screenPos.y), 100);
+        ball.position.set(-100 * screenPos.x, 5 + (100 * screenPos.y), 100);
         ball.__dirtyPosition = true;
         ball.applyCentralImpulse(new THREE.Vector3(0,35,0));
 
@@ -273,29 +286,10 @@
 	    new THREE.SphereGeometry( 3 ),
 	    new Physijs.createMaterial(new THREE.MeshBasicMaterial({ color: 0xEEFF11 }))
 	);
-	ball.addEventListener( 'collision', function( other_object, relative_velocity, relative_rotation, contact_normal ) {
-	    // `this` has collided with `other_object` with an impact speed of `relative_velocity` and a rotational force of `relative_rotation` and at normal `contact_normal`
-	    console.log('ball hit');
-      // ball.position.set(0,0,100);
-	});
 
 	ball.position.set(0,0,100);
 
 	scene.add(ball);
-
-  var box = new Physijs.BoxMesh(
-      new THREE.BoxGeometry(20,5,0),
-      new Physijs.createMaterial(new THREE.MeshBasicMaterial()),
-      0
-    );
-  // box.visible = false;
-  box.addEventListener('collision', function() {
-    console.log('Hit BOX!');
-  });
-
-  box.position.set(0,-27,100);
-  scene.add(box);
-
 
 	camera.position.x = -100;
 	camera.position.z = 400;
@@ -450,19 +444,18 @@
                     // if a joint is not valid
                     if (joints[j] == null || joints[j].confidence <= 0) continue;
                     
-                    if(j == 1){
-                    	handleHitsOnDrums(joints[j]);
-                    }
-
-                    
                     // update sample renderer joint position
                     nodestorender[h][j].position.set(joints[j].positionWorld.x * scaleFactor, joints[j].positionWorld.y * scaleFactor, joints[j].positionWorld.z * scaleFactor);
                     
-                    if(j === 9){
-                      fingerPoint = nodestorender[h][j].position;
-                    }
+                    //if(j === 9){
+                    //  fingerPoint = nodestorender[h][j].position;
+                    //}
                 }
+
             }
+            if (data.numberOfHands > 0) {
+                  fingerPoint = nodestorender[0][9].position;
+                }
 
             // retrieve the fired alerts
             for (a = 0; a < data.firedAlertData.length; a++) {
@@ -481,27 +474,6 @@
             }
         }
 
-        function handleHitsOnDrums(joint){
-        	    var palmXPosition = joint.positionWorld.x * scaleFactor;
-              var palmYPosition = joint.positionWorld.y * scaleFactor;
-              var palmZPosition = joint.positionWorld.z * scaleFactor;
-              
-              // console.log(`x ${palmXPosition}, y ${palmYPosition}`)
-
-              if (
-                (palmXPosition <= 10
-                && palmXPosition >= -10)
-                && (palmYPosition <= -27 && palmYPosition >= -32)
-                // && palmZPosition <= 112
-                // && palmZPosition >= 99
-                )
-                sounds['drumDeep'].play();
-              // else if (palmXPosition > 180)
-              //   sounds['hiHat'].play();
-              // else
-              //   sounds['drumSnare'].play();
-
-        }
         // stop streaming
         $('#Stop').click(function () {
 
